@@ -2,7 +2,6 @@ package garden_management_api.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,8 +15,11 @@ import garden_management_api.service.CropService;
 @RestController
 public class CropController {
 
-    @Autowired
-    private CropService cropService;
+    private final CropService cropService;
+
+    public CropController(CropService cropService) {
+        this.cropService = cropService;
+    }
 
     @GetMapping("/crops")
     public List<CropDTO> getAllCrops() {

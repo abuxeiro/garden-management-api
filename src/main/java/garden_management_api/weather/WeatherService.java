@@ -1,5 +1,8 @@
 package garden_management_api.weather;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,31 +15,46 @@ import java.time.LocalDateTime;
 
 @Service
 public class WeatherService {
+
+    private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
 	
 	private final WeatherRecordRepository weatherRecordRepository;
+	private final String weatherApiUrl;
+	private final Double latitude;
+	private final Double longitude;
+	private final String currentWeatherFields;
 	
 	public WeatherService(
-	        WeatherRecordRepository weatherRecordRepository) {
+	        WeatherRecordRepository weatherRecordRepository,
+	        @Value("${weather.api.url}") String weatherApiUrl,
+	        @Value("${weather.api.latitude}") Double latitude,
+	        @Value("${weather.api.longitude}") Double longitude,
+	        @Value("${weather.api.current-fields}") String currentWeatherFields) {
 
 	    this.weatherRecordRepository = weatherRecordRepository;
+	    this.weatherApiUrl = weatherApiUrl;
+	    this.latitude = latitude;
+	    this.longitude = longitude;
+	    this.currentWeatherFields = currentWeatherFields;
 	}
 	
 	public WeatherResponseDTO getWeather() {
 
-	    String url = "https://api.open-meteo.com/v1/forecast"
-	            + "?latitude=42.59548309609141"
-	            + "&longitude=-8.953329938730201"
-	            + "&current=temperature_2m,relative_humidity_2m";
+	    String url = weatherApiUrl
+	            + "?latitude=" + latitude
+	            + "&longitude=" + longitude
+	            + "&current=" + currentWeatherFields;
 
 	    RestTemplate restTemplate = new RestTemplate();
 
 	    WeatherResponseDTO response =
 	            restTemplate.getForObject(url, WeatherResponseDTO.class);
-	    
-	    System.out.println(response);
-	    System.out.println(response.getCurrent());
-	    System.out.println(
-	            response.getCurrent().getTemperature_2m()
+
+	    logger.info(
+	            "Weather data collected: temperature={} latitude={} longitude={}",
+	            response.getCurrent().getTemperature_2m(),
+	            latitude,
+	            longitude
 	    );
 
 	    WeatherRecord record = new WeatherRecord();
@@ -44,15 +62,15 @@ public class WeatherService {
 	    record.setTemperature(
 	            response.getCurrent().getTemperature_2m());
 
-	    record.setLatitude(42.59548309609141);
+	    record.setLatitude(latitude);
 
-	    record.setLongitude(-8.953329938730201);
+	    record.setLongitude(longitude);
 
 	    record.setCreatedAt(LocalDateTime.now());
 
 	    WeatherRecord savedRecord = weatherRecordRepository.save(record);
-	    
-	    System.out.println(savedRecord.getId());
+
+	    logger.info("Weather record saved with id={}", savedRecord.getId());
 
 	    return response;
 	}
